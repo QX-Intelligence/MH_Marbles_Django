@@ -1,0 +1,220 @@
+MH MARBLES: FULL API DOCUMENTATION 
+=========================================================
+Overview:
+- Base URL: http://localhost:8000
+- GET Requests are largely PUBLIC (No Token Required).
+- POST/PUT/PATCH/DELETE require an 'Authorization: Bearer <token>' header from Spring Boot (except Contact Form POST).
+- IMPORTANT: All image/media fields returned in GET responses dynamically generate temporary AWS S3 Pre-signed URLs (valid for 1 hour) instead of exposing static storage paths.
+- IMAGE UPLOADS: For creating/updating records with images, send a `multipart/form-data` request with the actual image File in the `image` (or `logo`) key. The backend automatically uploads to S3.
+
+---------------------------------------------------------
+1. COMPANIES API
+---------------------------------------------------------
+[GET] /api/companies/ 
+Auth Required: No (Public)
+Description: Retrieves all companies/brands.
+Response (200 OK):
+[
+  {
+    "id": 1,
+    "name": "Marble Kings",
+    "logo_key": "companies/xyz_img.jpg",
+    "logo_url": "https://mhm-appcomp-s3-01.s3.amazonaws.com/companies/img.jpg?X-Amz-..."
+  }
+]
+
+[POST] /api/companies/
+Auth Required: Yes (JWT Bearer Token)
+Content-Type: multipart/form-data
+Description: Create a new company.
+Request Body:
+- name: "Marble Kings" (Text)
+- logo: File (Image) -> Automatically uploaded to S3
+Response (201 Created): Returns the generated JSON object.
+
+[PATCH] /api/companies/{id}/ & [DELETE] /api/companies/{id}/
+Auth Required: Yes
+
+
+---------------------------------------------------------
+2. HERO CAROUSEL API
+---------------------------------------------------------
+[GET] /api/hero_carousel/
+Auth Required: No (Public)
+Response (200 OK):
+[
+  {
+    "id": 1,
+    "heading": "Premium Tiles",
+    "subtext": "Best in class",
+    "image_key": "hero_carousel/xyz.jpg",
+    "image_url": "https://mhm-appcomp-s3-01.s3.amazonaws.com/hero_carousel/img.jpg?...",
+    "cta_text": "Shop Now",
+    "cta_link": "/shop",
+    "order": 1
+  }
+]
+
+[POST] /api/hero_carousel/
+Auth Required: Yes
+Content-Type: multipart/form-data
+Request Body:
+- heading: (Text)
+- subtext: (Text)
+- cta_text: (Text)
+- cta_link: (Text)
+- order: (Number)
+- image: File (Image) -> Automatically uploaded to S3
+Response (201 Created): Returns generated JSON object.
+
+[PATCH] /api/hero_carousel/{id}/ & [DELETE] /api/hero_carousel/{id}/
+Auth Required: Yes
+
+
+---------------------------------------------------------
+3. SANITARY API (Products & Categories)
+---------------------------------------------------------
+
+*** Sanitary Categories (Unified) ***
+[GET] /api/sanitary/categories/
+Auth Required: No (Public)
+Description: Retrieves all product categories (Shared with main Products API).
+Response (200 OK):
+[
+  {
+    "id": 6,
+    "name": "Kitchen",
+    "slug": "kitchen",
+    "image_url": "..."
+  }
+]
+
+[POST] /api/sanitary/categories/ & [PATCH] /api/sanitary/categories/{id}/
+Description: Modifying a category here affects both Sanitary and regular Products.
+
+*** Sanitary Products ***
+[GET] /api/sanitary/
+Auth Required: No (Public)
+Supports direct query params: ?category=6
+Response (200 OK):
+[
+  {
+    "id": 1,
+    "name": "Chrome Faucet",
+    "category": 6,  // ID of the shared Category
+    "description": "...",
+    "image_key": "sanitary/products/xyz.jpg",
+    "image_url": "https://mhm-appcomp-s3-01.s3.amazonaws.com/sanitary/img.jpg?..."
+  }
+]
+
+[POST] /api/sanitary/
+Auth Required: Yes
+Content-Type: multipart/form-data
+Request Body:
+- name: (Text)
+- category: (ID integer of SanitaryCategory)
+- description: (Text)
+- image: File (Image) -> Automatically uploaded to S3
+Response (201 Created): Returns JSON.
+
+[PATCH] /api/sanitary/{id}/ & [DELETE] /api/sanitary/{id}/
+Auth Required: Yes
+
+
+---------------------------------------------------------
+4. PRODUCT COLLECTIONS API
+---------------------------------------------------------
+[GET] /api/collections/
+Auth Required: No (Public)
+Response (200 OK):
+[
+  {
+    "id": 1,
+    "name": "Summer Collection",
+    "description": "Bright tiles.",
+    "image_key": "collections/xyz.jpg",
+    "image_url": "https://mhm-appcomp-s3-01.s3.amazonaws.com/collections/img.jpg?...",
+    "products": [1, 2, 3]
+  }
+]
+
+[POST] /api/collections/
+Auth Required: Yes
+Content-Type: multipart/form-data
+Request Body:
+- name: (Text)
+- description: (Text)
+- cover_image: File (Image) -> Automatically uploaded to S3
+- products: (Array of Product IDs)
+Response (201 Created): Returns JSON.
+
+[PATCH] /api/collections/{id}/ & [DELETE] /api/collections/{id}/
+Auth Required: Yes
+
+
+---------------------------------------------------------
+5. PRODUCTS API (Cursor Paginated)
+---------------------------------------------------------
+[GET] /api/products/
+Auth Required: No (Public)
+Supports direct query params: ?company=1&category=2&color=Red&size=600x600&finish=Glossy
+Response (200 OK):
+{
+  "next": "http://localhost:8000/api/products/?cursor=cj1Qcm...",
+  "previous": null,
+  "results": [
+    {
+      "id": 1,
+      "name": "Classic Carrara",
+      "company": 1,
+      "category": 2,
+      "size": "800x800",
+      "color": "White",
+      "finish": "Matt",
+      "sku": "SKU-CAR-01",
+      "image_key": "products/carrara.jpg",
+      "image_url": "https://mhm-appcomp-s3-01.s3.amazonaws.com/products/carrara.jpg?..."
+    }
+  ]
+}
+
+[POST] /api/products/
+Auth Required: Yes
+Content-Type: multipart/form-data
+Request Body (Send as FormData):
+- name: "Classic Carrara" (Text)
+- company: 1 (Number)
+- category: 2 (Number)
+- size: "800x800" (Text)
+- color: "White" (Text)
+- finish: "Matt" (Text)
+- sku: "SKU-CAR-01" (Text)
+- image: File (Image) -> Automatically uploaded to S3
+Response (201 Created): Returns JSON.
+
+[PATCH] /api/products/{id}/ & [DELETE] /api/products/{id}/
+Auth Required: Yes
+
+
+---------------------------------------------------------
+6. CONTACT INQUIRIES API 
+---------------------------------------------------------
+[POST] /api/contacts/
+Auth Required: NO (Fully Public for site visitors)
+Content-Type: application/json
+Request Body:
+{
+  "name": "John Doe",
+  "email": "john@doe.com",
+  "phone": "+1234567890",
+  "message": "I want 500sqft of marble."
+}
+Response (201 Created): Returns JSON.
+
+[GET] /api/contacts/
+Auth Required: YES (Admin only)
+Response (200 OK): JSON Array of contacts.
+
+[PATCH] /api/contacts/{id}/ & [DELETE] /api/contacts/{id}/
+Auth Required: Yes
